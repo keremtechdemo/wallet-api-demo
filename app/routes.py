@@ -43,12 +43,21 @@ def get_wallet(wallet_id: int):
 def list_transactions(wallet_id: int):
     q = request.args.get("q", "")
     sort = request.args.get("sort", "created_at")
+    sort_columns = {
+        "id": "id",
+        "amount_cents": "amount_cents",
+        "merchant": "merchant",
+        "note": "note",
+        "created_at": "created_at",
+    }
+    if sort not in sort_columns:
+        return jsonify({"error": "invalid sort"}), 400
     sql = (
         "SELECT id, amount_cents, merchant, note, created_at FROM transactions "
-        f"WHERE wallet_id = {wallet_id} AND merchant LIKE '%{q}%' ORDER BY {sort} DESC"
+        f"WHERE wallet_id = ? AND merchant LIKE ? ORDER BY {sort_columns[sort]} DESC"
     )
     conn = get_conn()
-    rows = conn.execute(sql).fetchall()
+    rows = conn.execute(sql, (wallet_id, f"%{q}%")).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
